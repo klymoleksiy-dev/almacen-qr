@@ -75,14 +75,13 @@ function MainApp({ userName }) {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [showScanner, setShowScanner] = useState(false);
-  const [scannedCode, setScannedCode] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
   const [showAddMechanic, setShowAddMechanic] = useState(false);
   const deviceId = getDeviceId();
 
   useEffect(() => {
     loadAll();
-  }, []);
+  }, [loadAll]);
 
   async function loadAll() {
     setLoading(true);
