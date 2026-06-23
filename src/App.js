@@ -22,6 +22,13 @@ function getDeviceId() {
   return id;
 }
 
+async function hashPassword(password) {
+  const msgBuffer = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 const S = {
   container: { maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#f5f5f5', paddingBottom: 80 },
   loginContainer: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f5f5f5' },
@@ -49,6 +56,7 @@ const S = {
   btnDelete: { background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer', marginLeft: 'auto' },
   btnDisabled: { background: '#9ca3af', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', fontSize: 16, flex: 1 },
   btnIcon: { background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 10px', fontSize: 16, cursor: 'pointer' },
+  btnLogout: { background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 10px', fontSize: 13, cursor: 'pointer' },
   fab: { position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#1e40af', color: '#fff', border: 'none', borderRadius: 24, padding: '14px 28px', fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 100 },
   center: { textAlign: 'center', padding: 40, color: '#999' },
   input: { width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, marginBottom: 16, boxSizing: 'border-box' },
@@ -62,46 +70,87 @@ const S = {
   sectionBadge: { background: '#dbeafe', color: '#1e40af', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500 },
   codeDisplay: { fontSize: 20, fontWeight: 'bold', padding: '16px 0', color: '#111' },
   warning: { background: '#fef3c7', padding: 12, borderRadius: 8, color: '#92400e', marginBottom: 16 },
+  error: { background: '#fee2e2', padding: 12, borderRadius: 8, color: '#dc2626', marginBottom: 16, fontSize: 14 },
 };
 
 export default function App() {
   const [userName, setUserName] = useState(localStorage.getItem('user_name'));
-  const [nameInput, setNameInput] = useState('');
 
   if (!userName) {
-    return (
-      <div style={S.loginContainer}>
-        <div style={S.loginBox}>
-          <div style={{ fontSize: 64, marginBottom: 16 }}>🏭</div>
-          <h1 style={{ margin: '0 0 8px', fontSize: 28 }}>Almacén QR</h1>
-          <p style={{ color: '#666', marginBottom: 24 }}>Introduce tu nombre para continuar</p>
-          <input
-            style={S.input}
-            placeholder="Tu nombre"
-            value={nameInput}
-            onChange={e => setNameInput(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && nameInput.trim()) {
-                localStorage.setItem('user_name', nameInput.trim());
-                setUserName(nameInput.trim());
-              }
-            }}
-          />
-          <button style={{ ...S.btnPrimary, width: '100%' }} onClick={() => {
-            if (nameInput.trim()) {
-              localStorage.setItem('user_name', nameInput.trim());
-              setUserName(nameInput.trim());
-            }
-          }}>Entrar</button>
-        </div>
-      </div>
-    );
+    return <LoginScreen onLogin={name => {
+      localStorage.setItem('user_name', name);
+      setUserName(name);
+    }} />;
   }
 
-  return <MainApp userName={userName} />;
+  return <MainApp userName={userName} onLogout={() => {
+    localStorage.removeItem('user_name');
+    setUserName(null);
+  }} />;
 }
 
-function MainApp({ userName }) {
+function LoginScreen({ onLogin }) {
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    if (!name.trim() || !password.trim()) {
+      setError('Introduce tu nombre y contraseña');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    const hash = await hashPassword(password);
+    const { data } = await supabase
+      .from('users')
+      .select()
+      .eq('name', name.trim())
+      .eq('password_hash', hash)
+      .single();
+    setLoading(false);
+    if (data) {
+      onLogin(data.name);
+    } else {
+      setError('Nombre o contraseña incorrectos');
+    }
+  }
+
+  return (
+    <div style={S.loginContainer}>
+      <div style={S.loginBox}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🏭</div>
+        <h1 style={{ margin: '0 0 8px', fontSize: 28 }}>Almacén QR</h1>
+        <p style={{ color: '#666', marginBottom: 24 }}>Acceso restringido</p>
+        {error && <div style={S.error}>{error}</div>}
+        <input
+          style={S.input}
+          placeholder="Nombre de usuario"
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
+        <input
+          style={S.input}
+          placeholder="Contraseña"
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleLogin()}
+        />
+        <button
+          style={{ ...S.btnPrimary, width: '100%', opacity: loading ? 0.7 : 1 }}
+          onClick={handleLogin}
+          disabled={loading}
+        >
+          {loading ? 'Verificando...' : 'Entrar'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MainApp({ userName, onLogout }) {
   const [items, setItems] = useState([]);
   const [mechanics, setMechanics] = useState({});
   const [filter, setFilter] = useState('Todas');
@@ -112,9 +161,7 @@ function MainApp({ userName }) {
   const [showAddMechanic, setShowAddMechanic] = useState(false);
   const deviceId = getDeviceId();
 
-  useEffect(() => {
-    loadAll();
-  }, []); // eslint-disable-line
+  useEffect(() => { loadAll(); }, []); // eslint-disable-line
 
   async function loadAll() {
     setLoading(true);
@@ -211,6 +258,7 @@ function MainApp({ userName }) {
         <div style={S.headerActions}>
           <button style={S.btnIcon} onClick={loadAll}>🔄</button>
           <button style={S.btnIcon} onClick={() => setShowAddMechanic(true)}>👤+</button>
+          <button style={S.btnLogout} onClick={onLogout}>Salir</button>
         </div>
       </div>
       <input style={S.searchInput} placeholder="🔍 Buscar artículo..." value={search} onChange={e => setSearch(e.target.value)} />
