@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Html5Qrcode } from 'html5-qrcode';
+import jsQR from 'jsqr';
 
 const supabase = createClient(
   'https://qwjhhksvbkppdgupdkym.supabase.co',
@@ -22,395 +22,10 @@ function getDeviceId() {
   return id;
 }
 
-function getUserName() {
-  return localStorage.getItem('user_name');
-}
-
-export default function App() {
-  const [userName, setUserName] = useState(getUserName());
-  const [nameInput, setNameInput] = useState('');
-
-  if (!userName) {
-    return (
-      <div style={styles.loginContainer}>
-        <div style={styles.loginBox}>
-          <div style={styles.loginIcon}>🏭</div>
-          <h1 style={styles.loginTitle}>Almacén QR</h1>
-          <p style={styles.loginSubtitle}>Introduce tu nombre para continuar</p>
-          <input
-            style={styles.input}
-            placeholder="Tu nombre"
-            value={nameInput}
-            onChange={e => setNameInput(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && nameInput.trim()) {
-                localStorage.setItem('user_name', nameInput.trim());
-                setUserName(nameInput.trim());
-              }
-            }}
-          />
-          <button
-            style={styles.btnPrimary}
-            onClick={() => {
-              if (nameInput.trim()) {
-                localStorage.setItem('user_name', nameInput.trim());
-                setUserName(nameInput.trim());
-              }
-            }}
-          >
-            Entrar
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return <MainApp userName={userName} />;
-}
-
-function MainApp({ userName }) {
-  const [items, setItems] = useState([]);
-  const [mechanics, setMechanics] = useState({});
-  const [filter, setFilter] = useState('Todas');
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [showScanner, setShowScanner] = useState(false);
-  const [showAddMechanic, setShowAddMechanic] = useState(false);
-  const deviceId = getDeviceId();
-
-  useEffect(() => {
-    loadAll();
-  // eslint-disable-next-line
-  }, []);
-
-  async function loadAll() {
-    setLoading(true);
-    await loadMechanics();
-    await loadItems();
-    setLoading(false);
-  }
-
-  async function loadMechanics() {
-    const { data } = await supabase.from('mechanics').select();
-    const result = {};
-    SECTIONS.forEach(s => result[s] = []);
-    (data || []).forEach(row => {
-      if (result[row.section]) result[row.section].push(row.name);
-    });
-    setMechanics(result);
-  }
-
-  async function loadItems() {
-    const { data } = await supabase.from('inventory').select().order('id', { ascending: false });
-    setItems(data || []);
-  }
-
-  const filtered = items.filter(item => {
-    const matchSection = filter === 'Todas' || item.section === filter;
-    const matchSearch = !search || item.code.toLowerCase().includes(search.toLowerCase());
-    return matchSection && matchSearch;
-  });
-
-  const activeCount = items.filter(i => !i.written_off).length;
-
-  async function markWrittenOff(id, itemDeviceId) {
-    if (itemDeviceId !== deviceId) {
-      alert('No puedes dar de baja registros de otro usuario');
-      return;
-    }
-    if (!window.confirm('¿Dar de baja este artículo?')) return;
-    await supabase.from('inventory').update({ written_off: true }).eq('id', id);
-    loadItems();
-  }
-
-  async function deleteItem(id, itemDeviceId) {
-    if (itemDeviceId !== deviceId) {
-      alert('No puedes eliminar registros de otro usuario');
-      return;
-    }
-    if (!window.confirm('¿Eliminar permanentemente?')) return;
-    await supabase.from('inventory').delete().eq('id', id);
-    loadItems();
-  }
-
-  if (showScanner && !selectedSection) {
-    return (
-      <SectionPicker
-        onSelect={section => setSelectedSection(section)}
-        onCancel={() => setShowScanner(false)}
-      />
-    );
-  }
-
-  if (showScanner && selectedSection) {
-    return (
-      <QRScanner
-        section={selectedSection}
-        mechanics={mechanics[selectedSection] || []}
-        userName={userName}
-        deviceId={deviceId}
-        onSave={async (data) => {
-          await supabase.from('inventory').insert(data);
-          setShowScanner(false);
-          setSelectedSection(null);
-          loadItems();
-        }}
-        onCancel={() => { setShowScanner(false); setSelectedSection(null); }}
-      />
-    );
-  }
-
-  if (showAddMechanic) {
-    return (
-      <AddMechanic
-        onSave={async (section, name) => {
-          await supabase.from('mechanics').insert({ section, name });
-          await loadMechanics();
-          setShowAddMechanic(false);
-        }}
-        onCancel={() => setShowAddMechanic(false)}
-      />
-    );
-  }
-
-  return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <div>
-          <div style={styles.headerTitle}>👤 {userName}</div>
-          <div style={styles.headerSub}>🔴 {activeCount} activos</div>
-        </div>
-        <div style={styles.headerActions}>
-          <button style={styles.btnIcon} onClick={loadAll}>🔄</button>
-          <button style={styles.btnIcon} onClick={() => setShowAddMechanic(true)}>👤+</button>
-        </div>
-      </div>
-
-      <input
-        style={styles.searchInput}
-        placeholder="🔍 Buscar artículo..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-      />
-
-      <div style={styles.filters}>
-        {['Todas', ...SECTIONS].map(s => (
-          <button
-            key={s}
-            style={{ ...styles.filterBtn, ...(filter === s ? styles.filterBtnActive : {}) }}
-            onClick={() => setFilter(s)}
-          >
-            {s === 'Todas' ? 'Todas' : s.split(' ')[0]}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div style={styles.center}>Cargando...</div>
-      ) : filtered.length === 0 ? (
-        <div style={styles.center}>Sin resultados</div>
-      ) : (
-        <div style={styles.list}>
-          {filtered.map(item => {
-            const isRed = !item.written_off;
-            const isMine = item.device_id === deviceId;
-            return (
-              <div key={item.id} style={{ ...styles.card, background: isRed ? '#fff0f0' : '#f0fff0' }}>
-                <div style={styles.cardHeader}>
-                  <span style={{ ...styles.cardCode, color: isRed ? '#b91c1c' : '#15803d' }}>
-                    {item.code}
-                  </span>
-                  <span style={{ ...styles.badge, background: isMine ? '#dbeafe' : '#ffedd5', color: isMine ? '#1e40af' : '#9a3412' }}>
-                    {item.created_by || '?'}
-                  </span>
-                </div>
-                {item.description && <div style={styles.cardDesc}>{item.description}</div>}
-                <div style={styles.cardSub}>
-                  {item.section} · {item.mechanic} · x{item.qty}
-                </div>
-                <div style={styles.cardDate}>{item.date}</div>
-                <div style={styles.cardActions}>
-                  {isRed && isMine && (
-                    <button style={styles.btnDanger} onClick={() => markWrittenOff(item.id, item.device_id)}>
-                      Dar de baja
-                    </button>
-                  )}
-                  {!isRed && <span style={styles.doneIcon}>✅</span>}
-                  {!isRed && <span style={{ color: '#999', fontSize: 12 }}>🔒 {isRed ? '' : ''}</span>}
-                  {isRed && !isMine && <span style={{ color: '#999' }}>🔒</span>}
-                  {isMine && (
-                    <button style={styles.btnDelete} onClick={() => deleteItem(item.id, item.device_id)}>
-                      🗑️
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <button style={styles.fab} onClick={() => setShowScanner(true)}>
-        📷 Escanear
-      </button>
-    </div>
-  );
-}
-
-function SectionPicker({ onSelect, onCancel }) {
-  return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h2 style={{ margin: 0 }}>Seleccionar sección</h2>
-        <button style={styles.btnIcon} onClick={onCancel}>✕</button>
-      </div>
-      <div style={styles.list}>
-        {SECTIONS.map(s => (
-          <div key={s} style={{ ...styles.card, cursor: 'pointer' }} onClick={() => onSelect(s)}>
-            <div style={styles.cardCode}>{s}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function QRScanner({ section, mechanics, userName, deviceId, onSave, onCancel }) {
-  const [scanning, setScanning] = useState(true);
-  const [code, setCode] = useState('');
-  const [mechanic, setMechanic] = useState(mechanics[0] || '');
-  const [qty, setQty] = useState(1);
-  const [description, setDescription] = useState('');
-  const scannerRef = useRef(null);
-  const html5QrRef = useRef(null);
-
-  useEffect(() => {
-    if (!scanning) return;
-    const html5Qr = new Html5Qrcode('qr-reader');
-    html5QrRef.current = html5Qr;
-    html5Qr.start(
-      { facingMode: 'environment' },
-      { fps: 10, qrbox: { width: 250, height: 250 } },
-      (decodedText) => {
-        html5Qr.stop().then(() => {
-          setCode(decodedText);
-          setScanning(false);
-        });
-      },
-      () => {}
-    ).catch(() => {});
-    return () => {
-      html5Qr.stop().catch(() => {});
-    };
-  }, [scanning]);
-
-  if (scanning) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <h2 style={{ margin: 0 }}>Escanear QR</h2>
-          <button style={styles.btnIcon} onClick={onCancel}>✕</button>
-        </div>
-        <div style={{ padding: 16 }}>
-          <div style={styles.sectionBadge}>{section}</div>
-          <div id="qr-reader" style={{ width: '100%', marginTop: 16 }} ref={scannerRef} />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h2 style={{ margin: 0 }}>Artículo detectado</h2>
-        <button style={styles.btnIcon} onClick={onCancel}>✕</button>
-      </div>
-      <div style={{ padding: 16 }}>
-        <div style={styles.sectionBadge}>{section}</div>
-        <div style={styles.codeDisplay}>{code}</div>
-
-        <label style={styles.label}>Descripción</label>
-        <textarea
-          style={styles.textarea}
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          placeholder="Descripción del artículo (opcional)"
-          rows={2}
-        />
-
-        <label style={styles.label}>Mecánico</label>
-        {mechanics.length === 0 ? (
-          <div style={styles.warning}>No hay mecánicos. Añade uno primero.</div>
-        ) : (
-          <select style={styles.select} value={mechanic} onChange={e => setMechanic(e.target.value)}>
-            {mechanics.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        )}
-
-        <label style={styles.label}>Cantidad</label>
-        <div style={styles.qtyRow}>
-          <button style={styles.qtyBtn} onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
-          <span style={styles.qtyNum}>{qty}</span>
-          <button style={styles.qtyBtn} onClick={() => setQty(q => q + 1)}>+</button>
-        </div>
-
-        <div style={styles.actionRow}>
-          <button style={styles.btnSecondary} onClick={() => setScanning(true)}>Reescanear</button>
-          <button
-            style={mechanics.length === 0 ? styles.btnDisabled : styles.btnPrimary}
-            disabled={mechanics.length === 0}
-            onClick={() => onSave({
-              code,
-              section,
-              mechanic,
-              qty,
-              description,
-              written_off: false,
-              date: new Date().toISOString().slice(0, 16).replace('T', ' '),
-              created_by: userName,
-              device_id: deviceId,
-            })}
-          >
-            Guardar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AddMechanic({ onSave, onCancel }) {
-  const [section, setSection] = useState(SECTIONS[0]);
-  const [name, setName] = useState('');
-  return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h2 style={{ margin: 0 }}>Añadir mecánico</h2>
-        <button style={styles.btnIcon} onClick={onCancel}>✕</button>
-      </div>
-      <div style={{ padding: 16 }}>
-        <label style={styles.label}>Sección</label>
-        <select style={styles.select} value={section} onChange={e => setSection(e.target.value)}>
-          {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <label style={styles.label}>Nombre</label>
-        <input style={styles.input} value={name} onChange={e => setName(e.target.value)} placeholder="Nombre del mecánico" />
-        <div style={styles.actionRow}>
-          <button style={styles.btnSecondary} onClick={onCancel}>Cancelar</button>
-          <button style={styles.btnPrimary} onClick={() => name.trim() && onSave(section, name.trim())}>Añadir</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const styles = {
+const S = {
   container: { maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#f5f5f5', paddingBottom: 80 },
   loginContainer: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f5f5f5' },
   loginBox: { background: '#fff', borderRadius: 16, padding: 32, width: 320, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' },
-  loginIcon: { fontSize: 64, marginBottom: 16 },
-  loginTitle: { margin: '0 0 8px', fontSize: 28 },
-  loginSubtitle: { color: '#666', marginBottom: 24 },
   header: { background: '#1e40af', color: '#fff', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 },
   headerTitle: { fontWeight: 'bold', fontSize: 18 },
   headerSub: { fontSize: 13, opacity: 0.8 },
@@ -447,5 +62,331 @@ const styles = {
   sectionBadge: { background: '#dbeafe', color: '#1e40af', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500 },
   codeDisplay: { fontSize: 20, fontWeight: 'bold', padding: '16px 0', color: '#111' },
   warning: { background: '#fef3c7', padding: 12, borderRadius: 8, color: '#92400e', marginBottom: 16 },
-  doneIcon: { fontSize: 18 },
 };
+
+export default function App() {
+  const [userName, setUserName] = useState(localStorage.getItem('user_name'));
+  const [nameInput, setNameInput] = useState('');
+
+  if (!userName) {
+    return (
+      <div style={S.loginContainer}>
+        <div style={S.loginBox}>
+          <div style={{ fontSize: 64, marginBottom: 16 }}>🏭</div>
+          <h1 style={{ margin: '0 0 8px', fontSize: 28 }}>Almacén QR</h1>
+          <p style={{ color: '#666', marginBottom: 24 }}>Introduce tu nombre para continuar</p>
+          <input
+            style={S.input}
+            placeholder="Tu nombre"
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && nameInput.trim()) {
+                localStorage.setItem('user_name', nameInput.trim());
+                setUserName(nameInput.trim());
+              }
+            }}
+          />
+          <button style={{ ...S.btnPrimary, width: '100%' }} onClick={() => {
+            if (nameInput.trim()) {
+              localStorage.setItem('user_name', nameInput.trim());
+              setUserName(nameInput.trim());
+            }
+          }}>Entrar</button>
+        </div>
+      </div>
+    );
+  }
+
+  return <MainApp userName={userName} />;
+}
+
+function MainApp({ userName }) {
+  const [items, setItems] = useState([]);
+  const [mechanics, setMechanics] = useState({});
+  const [filter, setFilter] = useState('Todas');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [showScanner, setShowScanner] = useState(false);
+  const [selectedSection, setSelectedSection] = useState(null);
+  const [showAddMechanic, setShowAddMechanic] = useState(false);
+  const deviceId = getDeviceId();
+
+  useEffect(() => {
+    loadAll();
+  }, []); // eslint-disable-line
+
+  async function loadAll() {
+    setLoading(true);
+    const mechData = await supabase.from('mechanics').select();
+    const result = {};
+    SECTIONS.forEach(s => result[s] = []);
+    (mechData.data || []).forEach(row => {
+      if (result[row.section]) result[row.section].push(row.name);
+    });
+    setMechanics(result);
+    const itemData = await supabase.from('inventory').select().order('id', { ascending: false });
+    setItems(itemData.data || []);
+    setLoading(false);
+  }
+
+  const filtered = items.filter(item => {
+    const matchSection = filter === 'Todas' || item.section === filter;
+    const matchSearch = !search || item.code.toLowerCase().includes(search.toLowerCase());
+    return matchSection && matchSearch;
+  });
+
+  const activeCount = items.filter(i => !i.written_off).length;
+
+  async function markWrittenOff(id, itemDeviceId) {
+    if (itemDeviceId !== deviceId) { alert('No puedes dar de baja registros de otro usuario'); return; }
+    if (!window.confirm('¿Dar de baja este artículo?')) return;
+    await supabase.from('inventory').update({ written_off: true }).eq('id', id);
+    loadAll();
+  }
+
+  async function deleteItem(id, itemDeviceId) {
+    if (itemDeviceId !== deviceId) { alert('No puedes eliminar registros de otro usuario'); return; }
+    if (!window.confirm('¿Eliminar permanentemente?')) return;
+    await supabase.from('inventory').delete().eq('id', id);
+    loadAll();
+  }
+
+  if (showScanner && !selectedSection) {
+    return (
+      <div style={S.container}>
+        <div style={S.header}>
+          <h2 style={{ margin: 0 }}>Seleccionar sección</h2>
+          <button style={S.btnIcon} onClick={() => setShowScanner(false)}>✕</button>
+        </div>
+        <div style={S.list}>
+          {SECTIONS.map(s => (
+            <div key={s} style={{ ...S.card, cursor: 'pointer', background: '#fff' }} onClick={() => setSelectedSection(s)}>
+              <div style={S.cardCode}>{s}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (showScanner && selectedSection) {
+    return (
+      <QRScanner
+        section={selectedSection}
+        mechanics={mechanics[selectedSection] || []}
+        userName={userName}
+        deviceId={deviceId}
+        onSave={async (data) => {
+          await supabase.from('inventory').insert(data);
+          setShowScanner(false);
+          setSelectedSection(null);
+          loadAll();
+        }}
+        onCancel={() => { setShowScanner(false); setSelectedSection(null); }}
+      />
+    );
+  }
+
+  if (showAddMechanic) {
+    return (
+      <AddMechanic
+        onSave={async (section, name) => {
+          await supabase.from('mechanics').insert({ section, name });
+          await loadAll();
+          setShowAddMechanic(false);
+        }}
+        onCancel={() => setShowAddMechanic(false)}
+      />
+    );
+  }
+
+  return (
+    <div style={S.container}>
+      <div style={S.header}>
+        <div>
+          <div style={S.headerTitle}>👤 {userName}</div>
+          <div style={S.headerSub}>🔴 {activeCount} activos</div>
+        </div>
+        <div style={S.headerActions}>
+          <button style={S.btnIcon} onClick={loadAll}>🔄</button>
+          <button style={S.btnIcon} onClick={() => setShowAddMechanic(true)}>👤+</button>
+        </div>
+      </div>
+      <input style={S.searchInput} placeholder="🔍 Buscar artículo..." value={search} onChange={e => setSearch(e.target.value)} />
+      <div style={S.filters}>
+        {['Todas', ...SECTIONS].map(s => (
+          <button key={s} style={{ ...S.filterBtn, ...(filter === s ? S.filterBtnActive : {}) }} onClick={() => setFilter(s)}>
+            {s === 'Todas' ? 'Todas' : s.split(' ')[0]}
+          </button>
+        ))}
+      </div>
+      {loading ? (
+        <div style={S.center}>Cargando...</div>
+      ) : filtered.length === 0 ? (
+        <div style={S.center}>Sin resultados</div>
+      ) : (
+        <div style={S.list}>
+          {filtered.map(item => {
+            const isRed = !item.written_off;
+            const isMine = item.device_id === deviceId;
+            return (
+              <div key={item.id} style={{ ...S.card, background: isRed ? '#fff0f0' : '#f0fff0' }}>
+                <div style={S.cardHeader}>
+                  <span style={{ ...S.cardCode, color: isRed ? '#b91c1c' : '#15803d' }}>{item.code}</span>
+                  <span style={{ ...S.badge, background: isMine ? '#dbeafe' : '#ffedd5', color: isMine ? '#1e40af' : '#9a3412' }}>
+                    {item.created_by || '?'}
+                  </span>
+                </div>
+                {item.description && <div style={S.cardDesc}>{item.description}</div>}
+                <div style={S.cardSub}>{item.section} · {item.mechanic} · x{item.qty}</div>
+                <div style={S.cardDate}>{item.date}</div>
+                <div style={S.cardActions}>
+                  {isRed && isMine && <button style={S.btnDanger} onClick={() => markWrittenOff(item.id, item.device_id)}>Dar de baja</button>}
+                  {!isRed && <span>✅</span>}
+                  {isRed && !isMine && <span style={{ color: '#999' }}>🔒</span>}
+                  {isMine && <button style={S.btnDelete} onClick={() => deleteItem(item.id, item.device_id)}>🗑️</button>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <button style={S.fab} onClick={() => setShowScanner(true)}>📷 Escanear</button>
+    </div>
+  );
+}
+
+function QRScanner({ section, mechanics, userName, deviceId, onSave, onCancel }) {
+  const [scanning, setScanning] = useState(true);
+  const [code, setCode] = useState('');
+  const [mechanic, setMechanic] = useState(mechanics[0] || '');
+  const [qty, setQty] = useState(1);
+  const [description, setDescription] = useState('');
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const animRef = useRef(null);
+
+  useEffect(() => {
+    if (!scanning) return;
+    let active = true;
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+          tick();
+        }
+      })
+      .catch(() => alert('No se puede acceder a la cámara'));
+
+    function tick() {
+      if (!active) return;
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const result = jsQR(imageData.data, imageData.width, imageData.height);
+        if (result) {
+          active = false;
+          if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+          setCode(result.data);
+          setScanning(false);
+          return;
+        }
+      }
+      animRef.current = requestAnimationFrame(tick);
+    }
+
+    return () => {
+      active = false;
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
+  }, [scanning]); // eslint-disable-line
+
+  if (scanning) {
+    return (
+      <div style={S.container}>
+        <div style={S.header}>
+          <h2 style={{ margin: 0 }}>Escanear QR</h2>
+          <button style={S.btnIcon} onClick={onCancel}>✕</button>
+        </div>
+        <div style={{ padding: 16 }}>
+          <div style={S.sectionBadge}>{section}</div>
+          <video ref={videoRef} style={{ width: '100%', marginTop: 16, borderRadius: 8 }} playsInline muted />
+          <canvas ref={canvasRef} style={{ display: 'none' }} />
+          <p style={{ textAlign: 'center', color: '#666' }}>Apunta la cámara al código QR</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={S.container}>
+      <div style={S.header}>
+        <h2 style={{ margin: 0 }}>Artículo detectado</h2>
+        <button style={S.btnIcon} onClick={onCancel}>✕</button>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={S.sectionBadge}>{section}</div>
+        <div style={S.codeDisplay}>{code}</div>
+        <label style={S.label}>Descripción</label>
+        <textarea style={S.textarea} value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción (opcional)" rows={2} />
+        <label style={S.label}>Mecánico</label>
+        {mechanics.length === 0 ? (
+          <div style={S.warning}>No hay mecánicos. Añade uno primero.</div>
+        ) : (
+          <select style={S.select} value={mechanic} onChange={e => setMechanic(e.target.value)}>
+            {mechanics.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        )}
+        <label style={S.label}>Cantidad</label>
+        <div style={S.qtyRow}>
+          <button style={S.qtyBtn} onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
+          <span style={S.qtyNum}>{qty}</span>
+          <button style={S.qtyBtn} onClick={() => setQty(q => q + 1)}>+</button>
+        </div>
+        <div style={S.actionRow}>
+          <button style={S.btnSecondary} onClick={() => setScanning(true)}>Reescanear</button>
+          <button
+            style={mechanics.length === 0 ? S.btnDisabled : S.btnPrimary}
+            disabled={mechanics.length === 0}
+            onClick={() => onSave({ code, section, mechanic, qty, description, written_off: false, date: new Date().toISOString().slice(0, 16).replace('T', ' '), created_by: userName, device_id: deviceId })}
+          >Guardar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddMechanic({ onSave, onCancel }) {
+  const [section, setSection] = useState(SECTIONS[0]);
+  const [name, setName] = useState('');
+  return (
+    <div style={S.container}>
+      <div style={S.header}>
+        <h2 style={{ margin: 0 }}>Añadir mecánico</h2>
+        <button style={S.btnIcon} onClick={onCancel}>✕</button>
+      </div>
+      <div style={{ padding: 16 }}>
+        <label style={S.label}>Sección</label>
+        <select style={S.select} value={section} onChange={e => setSection(e.target.value)}>
+          {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <label style={S.label}>Nombre</label>
+        <input style={S.input} value={name} onChange={e => setName(e.target.value)} placeholder="Nombre del mecánico" />
+        <div style={S.actionRow}>
+          <button style={S.btnSecondary} onClick={onCancel}>Cancelar</button>
+          <button style={S.btnPrimary} onClick={() => name.trim() && onSave(section, name.trim())}>Añadir</button>
+        </div>
+      </div>
+    </div>
+  );
+}
