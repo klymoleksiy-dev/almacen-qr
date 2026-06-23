@@ -81,7 +81,8 @@ function MainApp({ userName }) {
 
   useEffect(() => {
     loadAll();
-  }, [loadAll]);
+  // eslint-disable-next-line
+  }, []);
 
   async function loadAll() {
     setLoading(true);
