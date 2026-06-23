@@ -75,7 +75,6 @@ function MainApp({ userName }) {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [showScanner, setShowScanner] = useState(false);
-  const [selectedSection, setSelectedSection] = useState(null);
   const [showAddMechanic, setShowAddMechanic] = useState(false);
   const deviceId = getDeviceId();
 
