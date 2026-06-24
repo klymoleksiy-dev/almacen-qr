@@ -1,8 +1,7 @@
 export const S = {
     mContainer: { maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#f5f5f5', paddingBottom: 80 },
     dLayout: { display: 'flex', minHeight: '100vh', background: '#f0f2f5' },
-    dSidebar: { width: 260, background: '#1e40af', color: '#fff', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, position: 'fixed', top: 0, left: 0, height: '100vh', overflowY: 'auto' },
-    dMain: { marginLeft: 260, flex: 1, padding: 24 },
+    dSidebar: { width: 260, background: '#1e40af', color: '#fff', padding: '24px 16px 80px 16px', display: 'flex', flexDirection: 'column', gap: 8, position: 'fixed', top: 0, left: 0, height: '100vh', overflowY: 'auto' },    dMain: { marginLeft: 260, flex: 1, padding: 24 },
     dHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
     dTitle: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
     dTable: { width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' },
