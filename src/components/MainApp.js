@@ -19,8 +19,36 @@ export default function MainApp({ userName, onLogout }) {
   const [showAddMechanic, setShowAddMechanic] = useState(false);
   const deviceId = getDeviceId();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [presence, setPresence] = useState([]);
 
-  useEffect(() => { loadAll(); }, []); // eslint-disable-line
+  useEffect(() => {
+    loadAll();
+    updatePresence();
+    const interval = setInterval(updatePresence, 30000);
+    const handleUnload = () => offlinePresence();
+    window.addEventListener('beforeunload', handleUnload);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleUnload);
+      offlinePresence();
+    };
+  }, []); // eslint-disable-line
+  
+  async function updatePresence() {
+    await supabase.from('presence').upsert({
+      user_name: userName,
+      last_seen: new Date().toISOString(),
+      is_online: true,
+    }, { onConflict: 'user_name' });
+  }
+  
+  async function offlinePresence() {
+    await supabase.from('presence').upsert({
+      user_name: userName,
+      last_seen: new Date().toISOString(),
+      is_online: false,
+    }, { onConflict: 'user_name' });
+  }
   
     
   async function loadAll() {
@@ -34,6 +62,8 @@ export default function MainApp({ userName, onLogout }) {
     setMechanics(result);
     const itemData = await supabase.from('inventory').select().order('id', { ascending: false });
     setItems(itemData.data || []);
+    const presenceData = await supabase.from('presence').select();
+    setPresence(presenceData.data || []);
     setLoading(false);
   }
 
@@ -111,7 +141,7 @@ export default function MainApp({ userName, onLogout }) {
 
   const commonProps = {
     userName, items, filtered, filter, setFilter, search, setSearch,
-    loading, activeCount, doneCount, deviceId, isAdmin,
+    loading, activeCount, doneCount, deviceId, isAdmin, presence,
     onScan: () => setShowScanner(true),
     onAddMechanic: () => setShowAddMechanic(true),
     onMarkWrittenOff: markWrittenOff,
