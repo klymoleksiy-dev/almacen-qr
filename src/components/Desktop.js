@@ -27,7 +27,7 @@ export default function Desktop({ userName, items, filtered, filter, setFilter, 
         <div style={{ maxHeight: 150, overflowY: 'auto' }}>
           {(presence || []).map(p => (
             <div key={p.user_name} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px', fontSize: 13, color: '#fff' }}>
-              <span style={{ width: 8, height: 8, borderRadius: 4, background: p.is_online ? '#22c55e' : '#94a3b8', flexShrink: 0, display: 'inline-block' }} />
+              <span className={p.is_online ? 'online-dot' : ''} style={{ width: 8, height: 8, borderRadius: 4, background: p.is_online ? '#84cc16' : '#475569', flexShrink: 0, display: 'inline-block' }} />
               <span style={{ flex: 1 }}>{p.user_name}</span>
               {!p.is_online && <span style={{ fontSize: 11, opacity: 0.6 }}>{new Date(p.last_seen).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}</span>}
             </div>
