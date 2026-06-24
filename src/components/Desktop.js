@@ -22,14 +22,17 @@ export default function Desktop({ userName, items, filtered, filter, setFilter, 
         <button style={{ ...S.dFilterBtn, ...(filter === 'dados_baja' ? S.dFilterBtnActive : {}) }} onClick={() => setFilter('dados_baja')}>
           ✅ Dados de baja
         </button>
+
         <div style={S.dSidebarSection}>Usuarios</div>
-        {(presence || []).map(p => (
-          <div key={p.user_name} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px', fontSize: 13, color: '#fff' }}>
-            <span style={{ width: 8, height: 8, borderRadius: 4, background: p.is_online ? '#22c55e' : '#94a3b8', flexShrink: 0, display: 'inline-block' }} />
-            <span style={{ flex: 1 }}>{p.user_name}</span>
-            {!p.is_online && <span style={{ fontSize: 11, opacity: 0.6 }}>{new Date(p.last_seen).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}</span>}
-          </div>
-        ))}
+        <div style={{ maxHeight: 150, overflowY: 'auto' }}>
+          {(presence || []).map(p => (
+            <div key={p.user_name} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px', fontSize: 13, color: '#fff' }}>
+              <span style={{ width: 8, height: 8, borderRadius: 4, background: p.is_online ? '#22c55e' : '#94a3b8', flexShrink: 0, display: 'inline-block' }} />
+              <span style={{ flex: 1 }}>{p.user_name}</span>
+              {!p.is_online && <span style={{ fontSize: 11, opacity: 0.6 }}>{new Date(p.last_seen).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}</span>}
+            </div>
+          ))}
+        </div>
 
         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button style={S.dFilterBtn} onClick={onAddMechanic}>👤+ Añadir mecánico</button>
@@ -104,9 +107,9 @@ export default function Desktop({ userName, items, filtered, filter, setFilter, 
                       <td style={S.dTd}>{isRed ? '🔴 Activo' : '✅ Baja'}</td>
                       <td style={S.dTd}>
                         <div style={{ display: 'flex', gap: 6 }}>
-                            {isRed && (isMine || isAdmin) && <button style={S.dBtnDanger} onClick={() => onMarkWrittenOff(item.id, item.device_id)}>Dar de baja</button>}
-                            {(isMine || isAdmin) && <button style={S.dBtnDelete} onClick={() => onDelete(item.id, item.device_id)}>🗑️</button>}
-                            {!isMine && !isAdmin && <span style={{ color: '#999', fontSize: 12 }}>🔒</span>}
+                          {isRed && (isMine || isAdmin) && <button style={S.dBtnDanger} onClick={() => onMarkWrittenOff(item.id, item.device_id)}>Dar de baja</button>}
+                          {(isMine || isAdmin) && <button style={S.dBtnDelete} onClick={() => onDelete(item.id, item.device_id)}>🗑️</button>}
+                          {!isMine && !isAdmin && <span style={{ color: '#999', fontSize: 12 }}>🔒</span>}
                         </div>
                       </td>
                     </tr>
