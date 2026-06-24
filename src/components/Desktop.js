@@ -1,7 +1,7 @@
 import { S } from '../styles';
 import { SECTIONS } from '../constants';
 
-export default function Desktop({ userName, items, filtered, filter, setFilter, search, setSearch, loading, activeCount, doneCount, deviceId, onScan, onAddMechanic, onMarkWrittenOff, onDelete, onLogout, onRefresh }) {
+export default function Desktop({ userName, items, filtered, filter, setFilter, search, setSearch, loading, activeCount, doneCount, deviceId, isAdmin, onScan, onAddMechanic, onMarkWrittenOff, onDelete, onLogout, onRefresh }) {
   return (
     <div style={S.dLayout}>
       <div style={S.dSidebar}>
@@ -96,9 +96,9 @@ export default function Desktop({ userName, items, filtered, filter, setFilter, 
                       <td style={S.dTd}>{isRed ? '🔴 Activo' : '✅ Baja'}</td>
                       <td style={S.dTd}>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          {isRed && isMine && <button style={S.dBtnDanger} onClick={() => onMarkWrittenOff(item.id, item.device_id)}>Dar de baja</button>}
-                          {isMine && <button style={S.dBtnDelete} onClick={() => onDelete(item.id, item.device_id)}>🗑️</button>}
-                          {!isMine && <span style={{ color: '#999', fontSize: 12 }}>🔒</span>}
+                            {isRed && (isMine || isAdmin) && <button style={S.dBtnDanger} onClick={() => onMarkWrittenOff(item.id, item.device_id)}>Dar de baja</button>}
+                            {(isMine || isAdmin) && <button style={S.dBtnDelete} onClick={() => onDelete(item.id, item.device_id)}>🗑️</button>}
+                            {!isMine && !isAdmin && <span style={{ color: '#999', fontSize: 12 }}>🔒</span>}
                         </div>
                       </td>
                     </tr>

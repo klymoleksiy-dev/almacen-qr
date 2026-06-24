@@ -1,7 +1,7 @@
 import { S } from '../styles';
 import { SECTIONS } from '../constants';
 
-export default function Mobile({ userName, filtered, filter, setFilter, search, setSearch, loading, activeCount, deviceId, onScan, onAddMechanic, onMarkWrittenOff, onDelete, onLogout, onRefresh }) {
+export default function Mobile({ userName, filtered, filter, setFilter, search, setSearch, loading, activeCount, deviceId, isAdmin, onScan, onAddMechanic, onMarkWrittenOff, onDelete, onLogout, onRefresh }) {
   return (
     <div style={S.mContainer}>
       <div style={S.header}>
@@ -42,10 +42,10 @@ export default function Mobile({ userName, filtered, filter, setFilter, search, 
                 <div style={S.cardSub}>{item.section} · {item.mechanic} · x{item.qty}</div>
                 <div style={S.cardDate}>{item.date}</div>
                 <div style={S.cardActions}>
-                  {isRed && isMine && <button style={S.btnDanger} onClick={() => onMarkWrittenOff(item.id, item.device_id)}>Dar de baja</button>}
-                  {!isRed && <span>✅</span>}
-                  {isRed && !isMine && <span style={{ color: '#999' }}>🔒</span>}
-                  {isMine && <button style={S.btnDelete} onClick={() => onDelete(item.id, item.device_id)}>🗑️</button>}
+                    {isRed && (isMine || isAdmin) && <button style={S.btnDanger} onClick={() => onMarkWrittenOff(item.id, item.device_id)}>Dar de baja</button>}
+                    {!isRed && <span>✅</span>}
+                    {isRed && !isMine && !isAdmin && <span style={{ color: '#999' }}>🔒</span>}
+                    {(isMine || isAdmin) && <button style={S.btnDelete} onClick={() => onDelete(item.id, item.device_id)}>🗑️</button>}
                 </div>
               </div>
             );

@@ -18,11 +18,15 @@ export default function MainApp({ userName, onLogout }) {
   const [selectedSection, setSelectedSection] = useState(null);
   const [showAddMechanic, setShowAddMechanic] = useState(false);
   const deviceId = getDeviceId();
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => { loadAll(); }, []); // eslint-disable-line
-
+  
+    
   async function loadAll() {
     setLoading(true);
+    const { data: userData } = await supabase.from('users').select('is_admin').eq('name', userName).single();
+    setIsAdmin(userData?.is_admin || false);
     const mechData = await supabase.from('mechanics').select();
     const result = {};
     SECTIONS.forEach(s => result[s] = []);
@@ -43,14 +47,14 @@ export default function MainApp({ userName, onLogout }) {
   const doneCount = items.filter(i => i.written_off).length;
 
   async function markWrittenOff(id, itemDeviceId) {
-    if (itemDeviceId !== deviceId) { alert('No puedes dar de baja registros de otro usuario'); return; }
+    if (itemDeviceId !== deviceId && !isAdmin) { alert('No puedes dar de baja registros de otro usuario'); return; }
     if (!window.confirm('¿Dar de baja este artículo?')) return;
     await supabase.from('inventory').update({ written_off: true }).eq('id', id);
     loadAll();
   }
 
   async function deleteItem(id, itemDeviceId) {
-    if (itemDeviceId !== deviceId) { alert('No puedes eliminar registros de otro usuario'); return; }
+    if (itemDeviceId !== deviceId && !isAdmin) { alert('No puedes eliminar registros de otro usuario'); return; }
     if (!window.confirm('¿Eliminar permanentemente?')) return;
     await supabase.from('inventory').delete().eq('id', id);
     loadAll();
