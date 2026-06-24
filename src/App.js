@@ -29,15 +29,46 @@ async function hashPassword(password) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+}
+
 const S = {
-  container: { maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#f5f5f5', paddingBottom: 80 },
+  // Mobile
+  mContainer: { maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#f5f5f5', paddingBottom: 80 },
+  // Desktop
+  dLayout: { display: 'flex', minHeight: '100vh', background: '#f0f2f5' },
+  dSidebar: { width: 260, background: '#1e40af', color: '#fff', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 8, position: 'fixed', top: 0, left: 0, height: '100vh', overflowY: 'auto' },
+  dMain: { marginLeft: 260, flex: 1, padding: 24 },
+  dHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  dTitle: { fontSize: 24, fontWeight: 'bold', color: '#1e293b' },
+  dTable: { width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' },
+  dTh: { padding: '12px 16px', textAlign: 'left', background: '#f8fafc', color: '#64748b', fontSize: 13, fontWeight: 600, borderBottom: '1px solid #e2e8f0' },
+  dTd: { padding: '12px 16px', borderBottom: '1px solid #f1f5f9', fontSize: 14 },
+  dSearchInput: { width: '100%', padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 15, boxSizing: 'border-box', marginBottom: 16 },
+  dSidebarTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.2)' },
+  dSidebarSection: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },
+  dFilterBtn: { width: '100%', textAlign: 'left', padding: '8px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', fontSize: 14 },
+  dFilterBtnActive: { background: 'rgba(255,255,255,0.2)' },
+  dBtnPrimary: { background: '#1e40af', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer' },
+  dBtnDanger: { background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer' },
+  dBtnDelete: { background: 'transparent', border: 'none', fontSize: 16, cursor: 'pointer' },
+  dBadge: { fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 500 },
+  dLogoutBtn: { marginTop: 'auto', padding: '8px 12px', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: 8, cursor: 'pointer', fontSize: 14 },
+  dStatsRow: { display: 'flex', gap: 16, marginBottom: 24 },
+  dStatCard: { flex: 1, background: '#fff', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' },
+  dStatNum: { fontSize: 32, fontWeight: 'bold', color: '#1e40af' },
+  dStatLabel: { fontSize: 13, color: '#64748b', marginTop: 4 },
+  // Shared
   loginContainer: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f5f5f5' },
-  loginBox: { background: '#fff', borderRadius: 16, padding: 32, width: 320, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' },
+  loginBox: { background: '#fff', borderRadius: 16, padding: 32, width: 340, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' },
   header: { background: '#1e40af', color: '#fff', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 },
-  headerTitle: { fontWeight: 'bold', fontSize: 18 },
-  headerSub: { fontSize: 13, opacity: 0.8 },
-  headerActions: { display: 'flex', gap: 8 },
-  searchInput: { width: '100%', padding: '10px 16px', border: 'none', borderBottom: '1px solid #ddd', fontSize: 16, boxSizing: 'border-box', background: '#fff' },
   filters: { display: 'flex', gap: 8, padding: '8px 16px', overflowX: 'auto', background: '#fff', borderBottom: '1px solid #eee' },
   filterBtn: { padding: '4px 12px', borderRadius: 20, border: '1px solid #ddd', background: '#f5f5f5', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: 13 },
   filterBtnActive: { background: '#1e40af', color: '#fff', border: '1px solid #1e40af' },
@@ -56,7 +87,6 @@ const S = {
   btnDelete: { background: 'transparent', border: 'none', fontSize: 18, cursor: 'pointer', marginLeft: 'auto' },
   btnDisabled: { background: '#9ca3af', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 24px', fontSize: 16, flex: 1 },
   btnIcon: { background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 10px', fontSize: 16, cursor: 'pointer' },
-  btnLogout: { background: 'rgba(255,255,255,0.2)', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 10px', fontSize: 13, cursor: 'pointer' },
   fab: { position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#1e40af', color: '#fff', border: 'none', borderRadius: 24, padding: '14px 28px', fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 100 },
   center: { textAlign: 'center', padding: 40, color: '#999' },
   input: { width: '100%', padding: 12, border: '1px solid #ddd', borderRadius: 8, fontSize: 16, marginBottom: 16, boxSizing: 'border-box' },
@@ -75,18 +105,10 @@ const S = {
 
 export default function App() {
   const [userName, setUserName] = useState(localStorage.getItem('user_name'));
-
   if (!userName) {
-    return <LoginScreen onLogin={name => {
-      localStorage.setItem('user_name', name);
-      setUserName(name);
-    }} />;
+    return <LoginScreen onLogin={name => { localStorage.setItem('user_name', name); setUserName(name); }} />;
   }
-
-  return <MainApp userName={userName} onLogout={() => {
-    localStorage.removeItem('user_name');
-    setUserName(null);
-  }} />;
+  return <MainApp userName={userName} onLogout={() => { localStorage.removeItem('user_name'); setUserName(null); }} />;
 }
 
 function LoginScreen({ onLogin }) {
@@ -96,25 +118,12 @@ function LoginScreen({ onLogin }) {
   const [loading, setLoading] = useState(false);
 
   async function handleLogin() {
-    if (!name.trim() || !password.trim()) {
-      setError('Introduce tu nombre y contraseña');
-      return;
-    }
-    setLoading(true);
-    setError('');
+    if (!name.trim() || !password.trim()) { setError('Introduce tu nombre y contraseña'); return; }
+    setLoading(true); setError('');
     const hash = await hashPassword(password);
-    const { data } = await supabase
-      .from('users')
-      .select()
-      .eq('name', name.trim())
-      .eq('password_hash', hash)
-      .single();
+    const { data } = await supabase.from('users').select().eq('name', name.trim()).eq('password_hash', hash).single();
     setLoading(false);
-    if (data) {
-      onLogin(data.name);
-    } else {
-      setError('Nombre o contraseña incorrectos');
-    }
+    if (data) { onLogin(data.name); } else { setError('Nombre o contraseña incorrectos'); }
   }
 
   return (
@@ -124,25 +133,9 @@ function LoginScreen({ onLogin }) {
         <h1 style={{ margin: '0 0 8px', fontSize: 28 }}>Almacén QR</h1>
         <p style={{ color: '#666', marginBottom: 24 }}>Acceso restringido</p>
         {error && <div style={S.error}>{error}</div>}
-        <input
-          style={S.input}
-          placeholder="Nombre de usuario"
-          value={name}
-          onChange={e => setName(e.target.value)}
-        />
-        <input
-          style={S.input}
-          placeholder="Contraseña"
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleLogin()}
-        />
-        <button
-          style={{ ...S.btnPrimary, width: '100%', opacity: loading ? 0.7 : 1 }}
-          onClick={handleLogin}
-          disabled={loading}
-        >
+        <input style={S.input} placeholder="Nombre de usuario" value={name} onChange={e => setName(e.target.value)} />
+        <input style={S.input} placeholder="Contraseña" type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} />
+        <button style={{ ...S.btnPrimary, width: '100%', opacity: loading ? 0.7 : 1 }} onClick={handleLogin} disabled={loading}>
           {loading ? 'Verificando...' : 'Entrar'}
         </button>
       </div>
@@ -151,6 +144,7 @@ function LoginScreen({ onLogin }) {
 }
 
 function MainApp({ userName, onLogout }) {
+  const isMobile = useIsMobile();
   const [items, setItems] = useState([]);
   const [mechanics, setMechanics] = useState({});
   const [filter, setFilter] = useState('Todas');
@@ -168,9 +162,7 @@ function MainApp({ userName, onLogout }) {
     const mechData = await supabase.from('mechanics').select();
     const result = {};
     SECTIONS.forEach(s => result[s] = []);
-    (mechData.data || []).forEach(row => {
-      if (result[row.section]) result[row.section].push(row.name);
-    });
+    (mechData.data || []).forEach(row => { if (result[row.section]) result[row.section].push(row.name); });
     setMechanics(result);
     const itemData = await supabase.from('inventory').select().order('id', { ascending: false });
     setItems(itemData.data || []);
@@ -184,6 +176,7 @@ function MainApp({ userName, onLogout }) {
   });
 
   const activeCount = items.filter(i => !i.written_off).length;
+  const doneCount = items.filter(i => i.written_off).length;
 
   async function markWrittenOff(id, itemDeviceId) {
     if (itemDeviceId !== deviceId) { alert('No puedes dar de baja registros de otro usuario'); return; }
@@ -201,7 +194,7 @@ function MainApp({ userName, onLogout }) {
 
   if (showScanner && !selectedSection) {
     return (
-      <div style={S.container}>
+      <div style={S.mContainer}>
         <div style={S.header}>
           <h2 style={{ margin: 0 }}>Seleccionar sección</h2>
           <button style={S.btnIcon} onClick={() => setShowScanner(false)}>✕</button>
@@ -248,20 +241,131 @@ function MainApp({ userName, onLogout }) {
     );
   }
 
-  return (
-    <div style={S.container}>
-      <div style={S.header}>
-        <div>
-          <div style={S.headerTitle}>👤 {userName}</div>
-          <div style={S.headerSub}>🔴 {activeCount} activos</div>
+  if (!isMobile) {
+    return (
+      <div style={S.dLayout}>
+        <div style={S.dSidebar}>
+          <div style={S.dSidebarTitle}>🏭 Almacén QR</div>
+          <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 16 }}>👤 {userName}</div>
+
+          <div style={S.dSidebarSection}>Filtrar por sección</div>
+          {['Todas', ...SECTIONS].map(s => (
+            <button key={s} style={{ ...S.dFilterBtn, ...(filter === s ? S.dFilterBtnActive : {}) }} onClick={() => setFilter(s)}>
+              {s === 'Todas' ? '📋 Todas' : `🔧 ${s.split(' ')[0]}`}
+            </button>
+          ))}
+
+          <div style={S.dSidebarSection}>Filtrar por estado</div>
+          <button style={{ ...S.dFilterBtn, ...(filter === 'activos' ? S.dFilterBtnActive : {}) }} onClick={() => setFilter('activos')}>
+            🔴 Solo activos
+          </button>
+          <button style={{ ...S.dFilterBtn, ...(filter === 'dados_baja' ? S.dFilterBtnActive : {}) }} onClick={() => setFilter('dados_baja')}>
+            ✅ Dados de baja
+          </button>
+
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button style={S.dFilterBtn} onClick={() => setShowAddMechanic(true)}>👤+ Añadir mecánico</button>
+            <button style={S.dFilterBtn} onClick={loadAll}>🔄 Actualizar</button>
+            <button style={S.dLogoutBtn} onClick={onLogout}>🚪 Salir</button>
+          </div>
         </div>
-        <div style={S.headerActions}>
-          <button style={S.btnIcon} onClick={loadAll}>🔄</button>
-          <button style={S.btnIcon} onClick={() => setShowAddMechanic(true)}>👤+</button>
-          <button style={S.btnLogout} onClick={onLogout}>Salir</button>
+
+        <div style={S.dMain}>
+          <div style={S.dHeader}>
+            <div style={S.dTitle}>Panel de control</div>
+            <button style={S.dBtnPrimary} onClick={() => setShowScanner(true)}>📷 Escanear QR</button>
+          </div>
+
+          <div style={S.dStatsRow}>
+            <div style={S.dStatCard}>
+              <div style={{ ...S.dStatNum, color: '#dc2626' }}>{activeCount}</div>
+              <div style={S.dStatLabel}>Activos 🔴</div>
+            </div>
+            <div style={S.dStatCard}>
+              <div style={{ ...S.dStatNum, color: '#16a34a' }}>{doneCount}</div>
+              <div style={S.dStatLabel}>Dados de baja ✅</div>
+            </div>
+            <div style={S.dStatCard}>
+              <div style={S.dStatNum}>{items.length}</div>
+              <div style={S.dStatLabel}>Total registros</div>
+            </div>
+          </div>
+
+          <input style={S.dSearchInput} placeholder="🔍 Buscar por artículo..." value={search} onChange={e => setSearch(e.target.value)} />
+
+          {loading ? (
+            <div style={S.center}>Cargando...</div>
+          ) : (
+            <table style={S.dTable}>
+              <thead>
+                <tr>
+                  <th style={S.dTh}>Artículo</th>
+                  <th style={S.dTh}>Descripción</th>
+                  <th style={S.dTh}>Sección</th>
+                  <th style={S.dTh}>Mecánico</th>
+                  <th style={S.dTh}>Cant.</th>
+                  <th style={S.dTh}>Fecha</th>
+                  <th style={S.dTh}>Usuario</th>
+                  <th style={S.dTh}>Estado</th>
+                  <th style={S.dTh}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered
+                  .filter(item => {
+                    if (filter === 'activos') return !item.written_off;
+                    if (filter === 'dados_baja') return item.written_off;
+                    return true;
+                  })
+                  .map(item => {
+                    const isRed = !item.written_off;
+                    const isMine = item.device_id === deviceId;
+                    return (
+                      <tr key={item.id} style={{ background: isRed ? '#fff8f8' : '#f8fff8' }}>
+                        <td style={{ ...S.dTd, fontWeight: 'bold', color: isRed ? '#b91c1c' : '#15803d' }}>{item.code}</td>
+                        <td style={{ ...S.dTd, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description || '—'}</td>
+                        <td style={S.dTd}><span style={{ fontSize: 12 }}>{item.section}</span></td>
+                        <td style={S.dTd}>{item.mechanic}</td>
+                        <td style={S.dTd}>{item.qty}</td>
+                        <td style={{ ...S.dTd, fontSize: 12, color: '#64748b' }}>{item.date}</td>
+                        <td style={S.dTd}>
+                          <span style={{ ...S.dBadge, background: isMine ? '#dbeafe' : '#ffedd5', color: isMine ? '#1e40af' : '#9a3412' }}>
+                            {item.created_by || '?'}
+                          </span>
+                        </td>
+                        <td style={S.dTd}>{isRed ? '🔴 Activo' : '✅ Baja'}</td>
+                        <td style={S.dTd}>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            {isRed && isMine && <button style={S.dBtnDanger} onClick={() => markWrittenOff(item.id, item.device_id)}>Dar de baja</button>}
+                            {isMine && <button style={S.dBtnDelete} onClick={() => deleteItem(item.id, item.device_id)}>🗑️</button>}
+                            {!isMine && <span style={{ color: '#999', fontSize: 12 }}>🔒</span>}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
-      <input style={S.searchInput} placeholder="🔍 Buscar artículo..." value={search} onChange={e => setSearch(e.target.value)} />
+    );
+  }
+
+  return (
+    <div style={S.mContainer}>
+      <div style={S.header}>
+        <div>
+          <div style={{ fontWeight: 'bold', fontSize: 18 }}>👤 {userName}</div>
+          <div style={{ fontSize: 13, opacity: 0.8 }}>🔴 {activeCount} activos</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={S.btnIcon} onClick={loadAll}>🔄</button>
+          <button style={S.btnIcon} onClick={() => setShowAddMechanic(true)}>👤+</button>
+          <button style={S.btnIcon} onClick={onLogout}>🚪</button>
+        </div>
+      </div>
+      <input style={{ width: '100%', padding: '10px 16px', border: 'none', borderBottom: '1px solid #ddd', fontSize: 16, boxSizing: 'border-box', background: '#fff' }} placeholder="🔍 Buscar artículo..." value={search} onChange={e => setSearch(e.target.value)} />
       <div style={S.filters}>
         {['Todas', ...SECTIONS].map(s => (
           <button key={s} style={{ ...S.filterBtn, ...(filter === s ? S.filterBtnActive : {}) }} onClick={() => setFilter(s)}>
@@ -282,9 +386,7 @@ function MainApp({ userName, onLogout }) {
               <div key={item.id} style={{ ...S.card, background: isRed ? '#fff0f0' : '#f0fff0' }}>
                 <div style={S.cardHeader}>
                   <span style={{ ...S.cardCode, color: isRed ? '#b91c1c' : '#15803d' }}>{item.code}</span>
-                  <span style={{ ...S.badge, background: isMine ? '#dbeafe' : '#ffedd5', color: isMine ? '#1e40af' : '#9a3412' }}>
-                    {item.created_by || '?'}
-                  </span>
+                  <span style={{ ...S.badge, background: isMine ? '#dbeafe' : '#ffedd5', color: isMine ? '#1e40af' : '#9a3412' }}>{item.created_by || '?'}</span>
                 </div>
                 {item.description && <div style={S.cardDesc}>{item.description}</div>}
                 <div style={S.cardSub}>{item.section} · {item.mechanic} · x{item.qty}</div>
@@ -322,11 +424,7 @@ function QRScanner({ section, mechanics, userName, deviceId, onSave, onCancel })
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       .then(stream => {
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-          tick();
-        }
+        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); tick(); }
       })
       .catch(() => alert('No se puede acceder a la cámara'));
 
@@ -335,8 +433,7 @@ function QRScanner({ section, mechanics, userName, deviceId, onSave, onCancel })
       const video = videoRef.current;
       const canvas = canvasRef.current;
       if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -344,9 +441,7 @@ function QRScanner({ section, mechanics, userName, deviceId, onSave, onCancel })
         if (result) {
           active = false;
           if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-          setCode(result.data);
-          setScanning(false);
-          return;
+          setCode(result.data); setScanning(false); return;
         }
       }
       animRef.current = requestAnimationFrame(tick);
@@ -361,7 +456,7 @@ function QRScanner({ section, mechanics, userName, deviceId, onSave, onCancel })
 
   if (scanning) {
     return (
-      <div style={S.container}>
+      <div style={S.mContainer}>
         <div style={S.header}>
           <h2 style={{ margin: 0 }}>Escanear QR</h2>
           <button style={S.btnIcon} onClick={onCancel}>✕</button>
@@ -377,7 +472,7 @@ function QRScanner({ section, mechanics, userName, deviceId, onSave, onCancel })
   }
 
   return (
-    <div style={S.container}>
+    <div style={S.mContainer}>
       <div style={S.header}>
         <h2 style={{ margin: 0 }}>Artículo detectado</h2>
         <button style={S.btnIcon} onClick={onCancel}>✕</button>
@@ -388,9 +483,7 @@ function QRScanner({ section, mechanics, userName, deviceId, onSave, onCancel })
         <label style={S.label}>Descripción</label>
         <textarea style={S.textarea} value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción (opcional)" rows={2} />
         <label style={S.label}>Mecánico</label>
-        {mechanics.length === 0 ? (
-          <div style={S.warning}>No hay mecánicos. Añade uno primero.</div>
-        ) : (
+        {mechanics.length === 0 ? <div style={S.warning}>No hay mecánicos.</div> : (
           <select style={S.select} value={mechanic} onChange={e => setMechanic(e.target.value)}>
             {mechanics.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
@@ -403,11 +496,10 @@ function QRScanner({ section, mechanics, userName, deviceId, onSave, onCancel })
         </div>
         <div style={S.actionRow}>
           <button style={S.btnSecondary} onClick={() => setScanning(true)}>Reescanear</button>
-          <button
-            style={mechanics.length === 0 ? S.btnDisabled : S.btnPrimary}
-            disabled={mechanics.length === 0}
-            onClick={() => onSave({ code, section, mechanic, qty, description, written_off: false, date: new Date().toISOString().slice(0, 16).replace('T', ' '), created_by: userName, device_id: deviceId })}
-          >Guardar</button>
+          <button style={mechanics.length === 0 ? S.btnDisabled : S.btnPrimary} disabled={mechanics.length === 0}
+            onClick={() => onSave({ code, section, mechanic, qty, description, written_off: false, date: new Date().toISOString().slice(0, 16).replace('T', ' '), created_by: userName, device_id: deviceId })}>
+            Guardar
+          </button>
         </div>
       </div>
     </div>
@@ -418,7 +510,7 @@ function AddMechanic({ onSave, onCancel }) {
   const [section, setSection] = useState(SECTIONS[0]);
   const [name, setName] = useState('');
   return (
-    <div style={S.container}>
+    <div style={S.mContainer}>
       <div style={S.header}>
         <h2 style={{ margin: 0 }}>Añadir mecánico</h2>
         <button style={S.btnIcon} onClick={onCancel}>✕</button>
