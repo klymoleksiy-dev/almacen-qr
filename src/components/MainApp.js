@@ -111,7 +111,7 @@ export default function MainApp({ userName, onLogout }) {
 
   const commonProps = {
     userName, items, filtered, filter, setFilter, search, setSearch,
-    loading, activeCount, doneCount, deviceId,
+    loading, activeCount, doneCount, deviceId, isAdmin,
     onScan: () => setShowScanner(true),
     onAddMechanic: () => setShowAddMechanic(true),
     onMarkWrittenOff: markWrittenOff,
