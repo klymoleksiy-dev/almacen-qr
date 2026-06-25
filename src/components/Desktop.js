@@ -1,7 +1,7 @@
 import { S } from '../styles';
 import { SECTIONS } from '../constants';
 
-export default function Desktop({ userName, items, filtered, filter, setFilter, search, setSearch, loading, activeCount, doneCount, deviceId, isAdmin, presence, onScan, onAddMechanic, onMarkWrittenOff, onDelete, onLogout, onRefresh }) {
+export default function Desktop({ userName, items, filtered, filter, setFilter, search, setSearch, loading, activeCount, doneCount, deviceId, isAdmin, presence, onScan, onAddMechanic, onMarkWrittenOff, onDelete, onLogout, onRefresh, onLocationScan }) {
   return (
     <div style={S.dLayout}>
       <div style={S.dSidebar}>
