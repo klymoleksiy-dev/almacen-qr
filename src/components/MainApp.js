@@ -7,6 +7,7 @@ import Mobile from './Mobile';
 import QRScanner from './QRScanner';
 import AddMechanic from './AddMechanic';
 import LocationScanner from './LocationScanner';
+import LocationsList from './LocationsList';
 
 export default function MainApp({ userName, onLogout }) {
   const isMobile = useIsMobile();
@@ -19,10 +20,12 @@ export default function MainApp({ userName, onLogout }) {
   const [selectedSection, setSelectedSection] = useState(null);
   const [showAddMechanic, setShowAddMechanic] = useState(false);
   const [showLocationScanner, setShowLocationScanner] = useState(false);
+  const [showLocations, setShowLocations] = useState(false);
   const deviceId = getDeviceId();
   const [isAdmin, setIsAdmin] = useState(false);
   const [presence, setPresence] = useState([]);
-  const [showLocations, setShowLocations] = useState(false);
+  
+  
 
   useEffect(() => {
     loadAll();
@@ -147,6 +150,17 @@ export default function MainApp({ userName, onLogout }) {
         userName={userName}
         deviceId={deviceId}
         onCancel={() => setShowLocationScanner(false)}
+      />
+    );
+  }
+  if (showLocations) {
+    return (
+      <LocationsList
+        userName={userName}
+        isAdmin={isAdmin}
+        deviceId={deviceId}
+        onBack={() => setShowLocations(false)}
+        onNewLocation={() => { setShowLocations(false); setShowLocationScanner(true); }}
       />
     );
   }
