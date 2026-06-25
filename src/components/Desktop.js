@@ -1,7 +1,7 @@
 import { S } from '../styles';
 import { SECTIONS } from '../constants';
 
-export default function Desktop({ userName, items, filtered, filter, setFilter, search, setSearch, loading, activeCount, doneCount, deviceId, isAdmin, presence, onScan, onAddMechanic, onMarkWrittenOff, onDelete, onLogout, onRefresh, onLocationScan }) {
+export default function Desktop({ userName, items, filtered, filter, setFilter, search, setSearch, loading, activeCount, doneCount, deviceId, isAdmin, presence, onScan, onAddMechanic, onMarkWrittenOff, onDelete, onLogout, onRefresh, onViewLocations }) {
   return (
     <div style={S.dLayout}>
       <div style={S.dSidebar}>
@@ -35,7 +35,7 @@ export default function Desktop({ userName, items, filtered, filter, setFilter, 
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 24 }}>
-          <button style={S.dFilterBtn} onClick={onLocationScan}>📍 Ubicación</button>
+          <button style={S.dFilterBtn} onClick={onViewLocations}>📍 Ver ubicaciones</button>
           <button style={S.dFilterBtn} onClick={onAddMechanic}>👤+ Añadir mecánico</button>
           <button style={S.dFilterBtn} onClick={onRefresh}>🔄 Actualizar</button>
           <button style={S.dLogoutBtn} onClick={onLogout}>🚪 Salir</button>

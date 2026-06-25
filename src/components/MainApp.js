@@ -22,6 +22,7 @@ export default function MainApp({ userName, onLogout }) {
   const deviceId = getDeviceId();
   const [isAdmin, setIsAdmin] = useState(false);
   const [presence, setPresence] = useState([]);
+  const [showLocations, setShowLocations] = useState(false);
 
   useEffect(() => {
     loadAll();
@@ -153,6 +154,7 @@ export default function MainApp({ userName, onLogout }) {
   const commonProps = {
     userName, items, filtered, filter, setFilter, search, setSearch,
     loading, activeCount, doneCount, deviceId, isAdmin, presence,
+    onViewLocations: () => setShowLocations(true),
     onLocationScan: () => setShowLocationScanner(true),
     onScan: () => setShowScanner(true),
     onAddMechanic: () => setShowAddMechanic(true),
