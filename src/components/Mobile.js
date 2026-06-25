@@ -52,6 +52,7 @@ export default function Mobile({ userName, filtered, filter, setFilter, search, 
           })}
         </div>
       )}
+      <button style={{ ...S.fab, bottom: 80, background: '#334155' }} onClick={onLocationScan}>📍 Ubicación</button>
       <button style={S.fab} onClick={onScan}>📷 Escanear</button>
     </div>
   );

@@ -6,6 +6,7 @@ import Desktop from './Desktop';
 import Mobile from './Mobile';
 import QRScanner from './QRScanner';
 import AddMechanic from './AddMechanic';
+import LocationScanner from './LocationScanner';
 
 export default function MainApp({ userName, onLogout }) {
   const isMobile = useIsMobile();
@@ -17,6 +18,7 @@ export default function MainApp({ userName, onLogout }) {
   const [showScanner, setShowScanner] = useState(false);
   const [selectedSection, setSelectedSection] = useState(null);
   const [showAddMechanic, setShowAddMechanic] = useState(false);
+  const [showLocationScanner, setShowLocationScanner] = useState(false);
   const deviceId = getDeviceId();
   const [isAdmin, setIsAdmin] = useState(false);
   const [presence, setPresence] = useState([]);
@@ -138,10 +140,20 @@ export default function MainApp({ userName, onLogout }) {
       />
     );
   }
+  if (showLocationScanner) {
+    return (
+      <LocationScanner
+        userName={userName}
+        deviceId={deviceId}
+        onCancel={() => setShowLocationScanner(false)}
+      />
+    );
+  }
 
   const commonProps = {
     userName, items, filtered, filter, setFilter, search, setSearch,
     loading, activeCount, doneCount, deviceId, isAdmin, presence,
+    onLocationScan: () => setShowLocationScanner(true),
     onScan: () => setShowScanner(true),
     onAddMechanic: () => setShowAddMechanic(true),
     onMarkWrittenOff: markWrittenOff,

@@ -35,6 +35,7 @@ export default function Desktop({ userName, items, filtered, filter, setFilter, 
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 24 }}>
+          <button style={S.dFilterBtn} onClick={onLocationScan}>📍 Ubicación</button>
           <button style={S.dFilterBtn} onClick={onAddMechanic}>👤+ Añadir mecánico</button>
           <button style={S.dFilterBtn} onClick={onRefresh}>🔄 Actualizar</button>
           <button style={S.dLogoutBtn} onClick={onLogout}>🚪 Salir</button>
