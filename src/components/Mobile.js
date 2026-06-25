@@ -1,7 +1,7 @@
 import { S } from '../styles';
 import { SECTIONS } from '../constants';
 
-export default function Mobile({ userName, filtered, filter, setFilter, search, setSearch, loading, activeCount, deviceId, isAdmin, onScan, onAddMechanic, onMarkWrittenOff, onDelete, onLogout, onRefresh }) {
+export default function Mobile({ userName, filtered, filter, setFilter, search, setSearch, loading, activeCount, deviceId, isAdmin, onScan, onAddMechanic, onMarkWrittenOff, onDelete, onLogout, onRefresh, onLocationScan }) {
   return (
     <div style={S.mContainer}>
       <div style={S.header}>
