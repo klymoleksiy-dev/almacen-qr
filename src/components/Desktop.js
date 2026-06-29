@@ -11,9 +11,14 @@ export default function Desktop({ userName, items, filtered, filter, setFilter, 
         <div style={S.dSidebarSection}>Filtrar por sección</div>
           {['Todas', ...SECTIONS].map(s => {
             const [code, ...rest] = s.split(' ');
+            const name = rest.join(' ');
             return (
-              <button key={s} style={{ ...S.dFilterBtn, ...(filter === s ? S.dFilterBtnActive : {}) }} onClick={() => setFilter(s)}>
-              {s === 'Todas' ? '📋 Todas' : <><strong>🔧 {code}</strong> {rest.join(' ')}</>}
+              <button key={s} style={{ ...S.filterBtn, ...(filter === s ? S.filterBtnActive : {}) }} onClick={() => setFilter(s)}>
+                {s === 'Todas' ? 'Todas' : (
+                  <>
+                    <strong>{code}</strong> {name}
+                  </>
+                )}
               </button>
             );
           })}
