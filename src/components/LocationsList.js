@@ -10,7 +10,6 @@ function extractPath(photoUrl) {
   const marker = '/photos/';
   const idx = photoUrl.indexOf(marker);
   if (idx === -1) return null;
-  // прибираємо можливий ?token=... у кінці
   return photoUrl.slice(idx + marker.length).split('?')[0];
 }
 
@@ -18,53 +17,27 @@ export default function LocationsList({ userName, isAdmin, deviceId, onBack, onN
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [photoUrls, setPhotoUrls] = useState({}); // raw photo_url -> signed url
+  const [selectedPhoto, setSelectedPhoto] = useState(null); // signed url відкритого фото
 
   useEffect(() => { loadLocations(); }, []); // eslint-disable-line
-
-  // Генеруємо signed URL-и щоразу, коли оновлюється список локацій
-  useEffect(() => {
-    async function signPhotos() {
-      const withPhotos = locations.filter(l => l.photo_url);
-      if (withPhotos.length === 0) { setPhotoUrls({}); return; }
-
-      // raw значення -> шлях у бакеті
-      const pathByRaw = {};
-      withPhotos.forEach(l => {
-        const path = extractPath(l.photo_url);
-        if (path) pathByRaw[l.photo_url] = path;
-      });
-
-      const paths = [...new Set(Object.values(pathByRaw))];
-      if (paths.length === 0) return;
-
-      // один запит на всі фото
-      const { data, error } = await supabase.storage
-        .from('photos')
-        .createSignedUrls(paths, 3600); // діє 1 годину
-
-      if (error || !data) return;
-
-      const signedByPath = {};
-      data.forEach(item => {
-        if (item.signedUrl && !item.error) signedByPath[item.path] = item.signedUrl;
-      });
-
-      const map = {};
-      Object.entries(pathByRaw).forEach(([raw, path]) => {
-        if (signedByPath[path]) map[raw] = signedByPath[path];
-      });
-      setPhotoUrls(map);
-    }
-    signPhotos();
-  }, [locations]);
 
   async function loadLocations() {
     setLoading(true);
     const { data } = await supabase.from('locations').select().order('created_at', { ascending: false });
     setLocations(data || []);
     setLoading(false);
+  }
+
+  // Генеруємо signed URL лише для тієї локації, яку відкрили
+  async function openPhoto(photoUrl) {
+    const path = extractPath(photoUrl);
+    if (!path) return;
+    setSelectedPhoto('loading');
+    const { data, error } = await supabase.storage
+      .from('photos')
+      .createSignedUrl(path, 3600); // діє 1 годину
+    if (error || !data) { setSelectedPhoto(null); alert('No se pudo cargar la foto'); return; }
+    setSelectedPhoto(data.signedUrl);
   }
 
   async function deleteLocation(id, itemDeviceId) {
@@ -125,31 +98,8 @@ export default function LocationsList({ userName, isAdmin, deviceId, onBack, onN
         <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {filtered.map(loc => {
             const isMine = loc.device_id === deviceId;
-            const signed = loc.photo_url ? photoUrls[loc.photo_url] : null;
             return (
               <div key={loc.id} style={{ background: '#1e293b', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
-                {/* Photo */}
-                {loc.photo_url && (
-                  <div style={{ position: 'relative', cursor: signed ? 'pointer' : 'default', minHeight: signed ? 'auto' : 80, background: '#0f172a' }} onClick={() => signed && setSelectedPhoto(signed)}>
-                    {signed ? (
-                      <>
-                        <img
-                          src={signed}
-                          alt="ubicación"
-                          style={{ width: '100%', maxHeight: 200, objectFit: 'cover', display: 'block' }}
-                        />
-                        <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', borderRadius: 4, padding: '2px 8px', color: '#fff', fontSize: 12 }}>
-                          🔍 Ver
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 80, color: '#475569', fontSize: 12 }}>
-                        Cargando foto…
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* Info */}
                 <div style={{ padding: 14 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
@@ -179,6 +129,17 @@ export default function LocationsList({ userName, isAdmin, deviceId, onBack, onN
                   </div>
 
                   {loc.description && <div style={{ color: '#64748b', fontSize: 13, marginBottom: 8 }}>{loc.description}</div>}
+
+                  {/* Кнопка перегляду фото (без превʼю) */}
+                  {loc.photo_url && (
+                    <button
+                      style={{ ...S.btnPrimary, padding: '8px 14px', fontSize: 13, marginBottom: 8 }}
+                      onClick={() => openPhoto(loc.photo_url)}
+                    >
+                      🔍 Ver foto
+                    </button>
+                  )}
+
                   <div style={{ color: '#475569', fontSize: 11 }}>{new Date(loc.created_at).toLocaleString('es', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
               </div>
@@ -193,8 +154,12 @@ export default function LocationsList({ userName, isAdmin, deviceId, onBack, onN
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setSelectedPhoto(null)}
         >
-          <img src={selectedPhoto} alt="foto" style={{ maxWidth: '95vw', maxHeight: '90vh', borderRadius: 8 }} />
-          <button style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', borderRadius: 8, padding: '8px 12px', fontSize: 18, cursor: 'pointer' }}>✕</button>
+          {selectedPhoto === 'loading' ? (
+            <div style={{ color: '#fff', fontSize: 14 }}>Cargando foto…</div>
+          ) : (
+            <img src={selectedPhoto} alt="foto" style={{ maxWidth: '95vw', maxHeight: '90vh', borderRadius: 8 }} />
+          )}
+          <button style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', borderRadius: 8, padding: '8px 12px', fontSize: 18, cursor: 'pointer' }} onClick={() => setSelectedPhoto(null)}>✕</button>
         </div>
       )}
     </div>
