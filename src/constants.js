@@ -5,3 +5,9 @@ export const SECTIONS = [
     '2703 Envasados Industrial',
     '2704 Taller P.L.S',
   ];
+
+export const MECHANIC_SOURCES = {
+    '2401': ['2601', '2701', '2703', '2704'], 
+    '2703': ['2703', '2704'],             
+    '2704': ['2703', '2704'],                
+  };

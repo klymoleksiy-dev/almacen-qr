@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { getDeviceId, useIsMobile } from '../utils';
-import { SECTIONS } from '../constants';
+import { SECTIONS, MECHANIC_SOURCES } from '../constants';
 import Desktop from './Desktop';
 import Mobile from './Mobile';
 import QRScanner from './QRScanner';
@@ -24,8 +24,6 @@ export default function MainApp({ userName, onLogout }) {
   const deviceId = getDeviceId();
   const [isAdmin, setIsAdmin] = useState(false);
   const [presence, setPresence] = useState([]);
-  
-  
 
   useEffect(() => {
     loadAll();
@@ -65,25 +63,25 @@ export default function MainApp({ userName, onLogout }) {
       last_seen: new Date().toISOString(),
       is_online: false,
     }, { onConflict: 'user_name' });
-  } // eslint-disable-line
-  
-  async function updatePresence() {
-    await supabase.from('presence').upsert({
-      user_name: userName,
-      last_seen: new Date().toISOString(),
-      is_online: true,
-    }, { onConflict: 'user_name' });
   }
-  
-  async function offlinePresence() {
-    await supabase.from('presence').upsert({
-      user_name: userName,
-      last_seen: new Date().toISOString(),
-      is_online: false,
-    }, { onConflict: 'user_name' });
+
+  // --- Звʼязки механіків між секціями ---
+  function sectionCode(s) {
+    return (s || '').split(' ')[0];
   }
-  
-    
+
+  function getMechanicsFor(selectedSection) {
+    const code = sectionCode(selectedSection);
+    const sources = MECHANIC_SOURCES[code] || [code]; // нема в мапі → власний список
+    const names = [];
+    SECTIONS.forEach(sec => {
+      if (sources.includes(sectionCode(sec))) {
+        (mechanics[sec] || []).forEach(n => names.push(n));
+      }
+    });
+    return [...new Set(names)].sort(); // без дублів, за алфавітом
+  }
+
   async function loadAll() {
     setLoading(true);
     const { data: userData } = await supabase.from('users').select('is_admin').eq('name', userName).single();
@@ -145,7 +143,7 @@ export default function MainApp({ userName, onLogout }) {
     return (
       <QRScanner
         section={selectedSection}
-        mechanics={mechanics[selectedSection] || []}
+        mechanics={getMechanicsFor(selectedSection)}
         userName={userName}
         deviceId={deviceId}
         onSave={async (data) => {
