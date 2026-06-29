@@ -56,7 +56,7 @@ export const S = {
   label: { display: 'block', fontWeight: 600, marginBottom: 6, color: '#cbd5e1' },
   qtyRow: { display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 },
   qtyBtn: { width: 40, height: 40, borderRadius: 20, border: '1px solid #334155', background: '#1e293b', color: '#fff', fontSize: 20, cursor: 'pointer', transition: 'all 0.2s' },
-  qtyNum: { fontSize: 24, fontWeight: 'bold', minWidth: 40, textAlign: 'center', color: '#fff' },
+  qtyNum: { fontSize: 24, fontWeight: 'bold', minWidth: 40, textAlign: 'center', color: '#000' },
   actionRow: { display: 'flex', gap: 12, marginTop: 8 },
   sectionBadge: { background: 'rgba(132,204,22,0.2)', color: '#84cc16', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500 },
   codeDisplay: { fontSize: 20, fontWeight: 'bold', padding: '16px 0', color: '#84cc16' },

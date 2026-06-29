@@ -55,10 +55,10 @@ export default function Desktop({ userName, items, filtered, filter, setFilter, 
       </div>
 
       <div style={S.dMain}>
-        <div style={S.dHeader}>
+        {/*<div style={S.dHeader}>
           <div style={S.dTitle}>Panel de control</div>
           <button style={S.dBtnPrimary} onClick={onScan}>📷 Escanear QR</button>
-        </div>
+          </div>*/}
 
         <div style={S.dStatsRow}>
           <div style={S.dStatCard}>
