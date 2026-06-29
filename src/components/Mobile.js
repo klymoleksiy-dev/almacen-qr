@@ -17,11 +17,19 @@ export default function Mobile({ userName, filtered, filter, setFilter, search, 
       </div>
       <input style={{ width: '100%', padding: '10px 16px', border: 'none', borderBottom: '1px solid #ddd', fontSize: 16, boxSizing: 'border-box', background: '#fff' }} placeholder="🔍 Buscar artículo..." value={search} onChange={e => setSearch(e.target.value)} />
       <div style={S.filters}>
-        {['Todas', ...SECTIONS].map(s => (
-          <button key={s} style={{ ...S.filterBtn, ...(filter === s ? S.filterBtnActive : {}) }} onClick={() => setFilter(s)}>
-            {s === 'Todas' ? 'Todas' : s.split(' ')[0]}
-          </button>
-        ))}
+        {['Todas', ...SECTIONS].map(s => {
+          const [code, ...rest] = s.split(' ');
+          const name = rest.join(' ');
+          return (
+            <button key={s} style={{ ...S.filterBtn, ...(filter === s ? S.filterBtnActive : {}) }} onClick={() => setFilter(s)}>
+              {s === 'Todas' ? 'Todas' : (
+                <>
+                  <strong>{code}</strong> {name}
+                </>
+              )}
+            </button>
+          );
+        })}
       </div>
       {loading ? (
         <div style={S.center}>Cargando...</div>
