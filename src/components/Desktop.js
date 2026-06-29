@@ -24,15 +24,19 @@ export default function Desktop({ userName, items, filtered, filter, setFilter, 
         </button>
 
         <div style={S.dSidebarSection}>Usuarios</div>
-        <div style={{ maxHeight: 150, overflowY: 'auto' }}>
-          {(presence || []).map(p => (
-            <div key={p.user_name} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px', fontSize: 13, color: '#fff' }}>
-              <span className={p.is_online ? 'online-dot' : ''} style={{ width: 8, height: 8, borderRadius: 4, background: p.is_online ? '#84cc16' : '#475569', flexShrink: 0, display: 'inline-block' }} />
-              <span style={{ flex: 1 }}>{p.user_name}</span>
-              {!p.is_online && <span style={{ fontSize: 11, opacity: 0.6 }}>{new Date(p.last_seen).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}</span>}
-            </div>
-          ))}
-        </div>
+          <div style={{ maxHeight: 150, overflowY: 'auto' }}>
+            {(presence || []).map(p => {
+              const ONLINE_WINDOW = 60000; // 60 секунд
+              const online = p.last_seen && (Date.now() - new Date(p.last_seen).getTime() < ONLINE_WINDOW);
+              return (
+                <div key={p.user_name} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px', fontSize: 13, color: '#fff' }}>
+                  <span className={online ? 'online-dot' : ''} style={{ width: 8, height: 8, borderRadius: 4, background: online ? '#84cc16' : '#475569', flexShrink: 0, display: 'inline-block' }} />
+                  <span style={{ flex: 1 }}>{p.user_name}</span>
+                  {!online && p.last_seen && <span style={{ fontSize: 11, opacity: 0.6 }}>{new Date(p.last_seen).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}</span>}
+                </div>
+              );
+            })}
+          </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 24 }}>
           <button style={S.dFilterBtn} onClick={onViewLocations}>📍 Ver ubicaciones</button>

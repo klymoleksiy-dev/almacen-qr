@@ -29,8 +29,14 @@ export default function MainApp({ userName, onLogout }) {
 
   useEffect(() => {
     loadAll();
-    updatePresence();
-    const interval = setInterval(updatePresence, 30000);
+    updatePresence();   // одразу пишемо свій heartbeat
+    loadPresence();     // одразу читаємо чужі статуси
+
+    const interval = setInterval(() => {
+      updatePresence(); // оновлюємо свій last_seen
+      loadPresence();   // перечитуємо presence інших
+    }, 20000);
+
     const handleUnload = () => offlinePresence();
     window.addEventListener('beforeunload', handleUnload);
     return () => {
@@ -39,6 +45,27 @@ export default function MainApp({ userName, onLogout }) {
       offlinePresence();
     };
   }, []); // eslint-disable-line
+
+  async function updatePresence() {
+    await supabase.from('presence').upsert({
+      user_name: userName,
+      last_seen: new Date().toISOString(),
+      is_online: true,
+    }, { onConflict: 'user_name' });
+  }
+
+  async function loadPresence() {
+    const { data } = await supabase.from('presence').select();
+    setPresence(data || []);
+  }
+
+  async function offlinePresence() {
+    await supabase.from('presence').upsert({
+      user_name: userName,
+      last_seen: new Date().toISOString(),
+      is_online: false,
+    }, { onConflict: 'user_name' });
+  } // eslint-disable-line
   
   async function updatePresence() {
     await supabase.from('presence').upsert({

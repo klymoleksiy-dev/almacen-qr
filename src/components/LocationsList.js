@@ -2,13 +2,63 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { S } from '../styles';
 
+// Перетворює збережене значення photo_url на шлях у бакеті.
+// Працює і зі старими записами (повний публічний URL), і з новими (чистий шлях).
+function extractPath(photoUrl) {
+  if (!photoUrl) return null;
+  if (!photoUrl.startsWith('http')) return photoUrl; // вже шлях
+  const marker = '/photos/';
+  const idx = photoUrl.indexOf(marker);
+  if (idx === -1) return null;
+  // прибираємо можливий ?token=... у кінці
+  return photoUrl.slice(idx + marker.length).split('?')[0];
+}
+
 export default function LocationsList({ userName, isAdmin, deviceId, onBack, onNewLocation }) {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [photoUrls, setPhotoUrls] = useState({}); // raw photo_url -> signed url
 
   useEffect(() => { loadLocations(); }, []); // eslint-disable-line
+
+  // Генеруємо signed URL-и щоразу, коли оновлюється список локацій
+  useEffect(() => {
+    async function signPhotos() {
+      const withPhotos = locations.filter(l => l.photo_url);
+      if (withPhotos.length === 0) { setPhotoUrls({}); return; }
+
+      // raw значення -> шлях у бакеті
+      const pathByRaw = {};
+      withPhotos.forEach(l => {
+        const path = extractPath(l.photo_url);
+        if (path) pathByRaw[l.photo_url] = path;
+      });
+
+      const paths = [...new Set(Object.values(pathByRaw))];
+      if (paths.length === 0) return;
+
+      // один запит на всі фото
+      const { data, error } = await supabase.storage
+        .from('photos')
+        .createSignedUrls(paths, 3600); // діє 1 годину
+
+      if (error || !data) return;
+
+      const signedByPath = {};
+      data.forEach(item => {
+        if (item.signedUrl && !item.error) signedByPath[item.path] = item.signedUrl;
+      });
+
+      const map = {};
+      Object.entries(pathByRaw).forEach(([raw, path]) => {
+        if (signedByPath[path]) map[raw] = signedByPath[path];
+      });
+      setPhotoUrls(map);
+    }
+    signPhotos();
+  }, [locations]);
 
   async function loadLocations() {
     setLoading(true);
@@ -75,19 +125,28 @@ export default function LocationsList({ userName, isAdmin, deviceId, onBack, onN
         <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {filtered.map(loc => {
             const isMine = loc.device_id === deviceId;
+            const signed = loc.photo_url ? photoUrls[loc.photo_url] : null;
             return (
               <div key={loc.id} style={{ background: '#1e293b', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
                 {/* Photo */}
                 {loc.photo_url && (
-                  <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => setSelectedPhoto(loc.photo_url)}>
-                    <img
-                      src={loc.photo_url}
-                      alt="ubicación"
-                      style={{ width: '100%', maxHeight: 200, objectFit: 'cover', display: 'block' }}
-                    />
-                    <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', borderRadius: 4, padding: '2px 8px', color: '#fff', fontSize: 12 }}>
-                      🔍 Ver
-                    </div>
+                  <div style={{ position: 'relative', cursor: signed ? 'pointer' : 'default', minHeight: signed ? 'auto' : 80, background: '#0f172a' }} onClick={() => signed && setSelectedPhoto(signed)}>
+                    {signed ? (
+                      <>
+                        <img
+                          src={signed}
+                          alt="ubicación"
+                          style={{ width: '100%', maxHeight: 200, objectFit: 'cover', display: 'block' }}
+                        />
+                        <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', borderRadius: 4, padding: '2px 8px', color: '#fff', fontSize: 12 }}>
+                          🔍 Ver
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 80, color: '#475569', fontSize: 12 }}>
+                        Cargando foto…
+                      </div>
+                    )}
                   </div>
                 )}
 
